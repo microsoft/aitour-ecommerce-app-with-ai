@@ -1,51 +1,62 @@
-To help prepare content for AI Tour, please use this template repository for organizing your sessions and preparing the content for future presentors.
-1. Update this readme with the todo's listed below
-2. The src folder has been created for all development tasks when creating this session
-3. The Lab folder is in-person and async participation with content, please update this folder with instructions for participants to follow along.
-4. The Presenter Notes folder is the train the trainer section. Here add any slide decks, demo videos, and other content as needed. This page has a rough layout to provide ideas but can be edited as needed.
-5. If you are taking advantage of the static front end site, edit the content in the _config.yml file as needed (specifically the title and description)
+# Infusing an eCommerce app with AI
 
+## Session Description
 
-# [TODO: Insert Session Title]
+In this session we will explore how to enhance an eCommerce application using AI. We will start by introducing the eShopLite application, a frontend app built with Blazor and a backend app with .NET API. Our goal is to implement a search feature that uses AI to enable a natural language search experience for users.
 
-This repo is intended as a template for Microsoft AI Tour repositories
+In this session, we will dive into the building process, providing an overview of AI models and introducing Semantic Kernel as the key component to connect everything. We will add AI services to the main app, explain the main changes, and run the BackEnd to test the smart search functionality.
 
-## Session Desciption
-
-TODO: Add short description of the session. Please note this description should be at a technical level that anyone from decision makers to conference attendees can understand.
+Finally, we will review and explain the main concepts covered in the session, including Semantic Kernel, the deployed models, and Prompty, with an optional Q&A session to address any questions from the audience.
 
 ## Learning Outcomes
-TODO: Add a list of what you hope the attendee will take away from this session. This can be skills, technology, appreciation, etc.
+
+- Understand the integration of LLM-based AI into new or existing applications using .NET and Azure AI Services.
+- Learn the tools, libraries, and best practices for incorporating LLMs into intelligent applications.
+- Gain practical experience with Prompty.
 
 ## Technology Used
-TODO: Add a list of any technology or software used.
 
-## Additional Resources and Continued Learning
+The technologies used in the session are:
+
+- Blazor: Used for the frontend application.
+- .NET API: Used for the backend application.
+- AI Models: GPT-4o and Ada002 for embeddings.
+- Semantic Kernel: Key component to connect everything.
+- Prompty: Used for search functionality.
+- Visual Studio Code: Used for Prompty usage and lifecycle.
+- Aspire: Used for analysis and demo details.
+
+## Session Resources
+
+Check the following materials to know more about this session.
+
+| Resources          | Links                             | Description        |
+|:-------------------|:----------------------------------|:-------------------|
+| Train the Trainer | [Requirements and Preparation](./train-the-trainer/RequirementsAndPreparation.md) | The main goal of the document is to outline the necessary steps and requirements for running the demo session in both Windows and CodeSpaces environments, including setting up the environment, accessing GPT and ADA models, and preparing the source code. |
+| Train the Trainer | [Demo steps using Visual Studio 2022](./train-the-trainer/step-by-step-vs2022.md) | The main goal of the document is to provide a detailed guide for setting up and running the demo project using Visual Studio 2022, including implementing AI search with Semantic Kernel and improving the response message.  |
+| Train the Trainer | [Demo Steps using CodeSpaces](./train-the-trainer/step-by-step-codespaces.md) | The main goal of the document is to provide a detailed guide for setting up and running the demo project using GitHub Codespaces, including implementing AI search with Semantic Kernel and improving the response message. |
+
+
+<!-- ## Additional Resources and Continued Learning
 TODO: If you would like to link the user to further learning, please enter that here.
 
 | Resources          | Links                             | Description        |
 |:-------------------|:----------------------------------|:-------------------|
 | Future Learning 1  | [Link 1](https://www.google.com/) | Learn more about X |
-| Future Learning 2  | [Link 2](https://www.google.com/) | Learn more about Y |
+| Future Learning 2  | [Link 2](https://www.google.com/) | Learn more about Y | -->
 
 ## Content Owners
-TODO: Add yourself as a content owner
-1. Change the src in the image tag to {your github url}.png
-2. Change INSERT NAME HERE to your name
-3. Change the github url in the final href to your url.
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 
 <table>
 <tr>
     <td align="center"><a href="http://learnanalytics.microsoft.com">
-        <img src="https://github.com/cole-g-johnson.png" width="100px;" alt="Chris Testa-O'Neill
-"/><br />
-        <sub><b>INSERT NAME HERE
+        <img src="https://github.com/elbruno.png" width="100px;" alt="Bruno Capuano"/><br />
+        <sub><b>Bruno Capuano
 </b></sub></a><br />
-            <a href="https://github.com/cole-g-johnson" title="talk">📢</a> 
+            <a href="https://github.com/elbruno" title="talk">📢</a> 
     </td>
 </tr></table>
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
-

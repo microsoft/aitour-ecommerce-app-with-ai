@@ -1,0 +1,8 @@
+**/bin/**
+**/obj/**
+**.mono/registry/CurrentUser/**
+**/.dtbcache.v2**
+**.vsidx
+**.suo
+**/.vs/**
+**.env**
