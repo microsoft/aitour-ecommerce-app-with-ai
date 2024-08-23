@@ -6,6 +6,8 @@ In this session we will explore how to enhance an eCommerce application using AI
 
 In this session, we will dive into the building process, providing an overview of AI models and introducing Semantic Kernel as the key component to connect everything. We will add AI services to the main app, explain the main changes, and run the BackEnd to test the smart search functionality.
 
+![Session cover image with a bright "AI" text in 3D over a blue and purple abstract background.](img/EN-US_BRK442_Tech.png)
+
 Finally, we will review and explain the main concepts covered in the session, including Semantic Kernel, the deployed models, and Prompty, with an optional Q&A session to address any questions from the audience.
 
 ## Learning Outcomes
