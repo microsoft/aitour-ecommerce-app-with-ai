@@ -39,6 +39,13 @@ Check the following materials to know more about this session.
 | Train the Trainer | [Demo steps using Visual Studio 2022](./train-the-trainer/step-by-step-vs2022.md) | The main goal of the document is to provide a detailed guide for setting up and running the demo project using Visual Studio 2022, including implementing AI search with Semantic Kernel and improving the response message.  |
 | Train the Trainer | [Demo Steps using CodeSpaces](./train-the-trainer/step-by-step-codespaces.md) | The main goal of the document is to provide a detailed guide for setting up and running the demo project using GitHub Codespaces, including implementing AI search with Semantic Kernel and improving the response message. |
 
+## Additional Resources and Continued Learning
+
+| Resources          | Links                             | Description        |
+|:-------------------|:----------------------------------|:-------------------|
+| Develop AI agents using Azure OpenAI and the Semantic Kernel SDK  | [Learning Path](https://learn.microsoft.com/en-us/training/paths/develop-ai-agents-azure-open-ai-semantic-kernel-sdk/) | Learn how to use the Semantic Kernel SDK to build intelligent applications that automate tasks and perform natural language processing. |
+| Develop Generative AI solutions with Azure OpenAI Service | [Learning Path](https://learn.microsoft.com/en-us/training/paths/develop-ai-solutions-azure-openai/) | Azure OpenAI Service provides access to OpenAI's powerful large language models such as ChatGPT, GPT, Codex, and Embeddings models. These models enable various natural language processing (NLP) solutions to understand, converse, and generate content. Users can access the service through REST APIs, SDKs, and Azure OpenAI Studio. |
+
 ## Content Owners
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
