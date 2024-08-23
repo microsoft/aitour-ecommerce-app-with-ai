@@ -16,7 +16,7 @@ code.
 | Resources          | Links                            | Description |
 |-------------------|----------------------------------|-------------------|
 | PowerPoint        | - [Presentation](https://aka.ms/AArx7pc) | Slides |
-| Videos            | - [Train the Trainer Recording](https://nam06.safelinks.protection.outlook.com/?url=https%3A%2F%2Faitourassetstore.blob.core.windows.net%2Fassets%2FBRK442%2520Infusing%2520an%2520eCommerce%2520app%2520with%2520AI%2FEN-US_BRK442_TTT_V1.0.mp4&data=05%7C02%7Cbrunocapuano%40microsoft.com%7C56d02e06baef41461de108dcc3970cbc%7C72f988bf86f141af91ab2d7cd011db47%7C1%7C0%7C638600300750255542%7CUnknown%7CTWFpbGZsb3d8eyJWIjoiMC4wLjAwMDAiLCJQIjoiV2luMzIiLCJBTiI6Ik1haWwiLCJXVCI6Mn0%3D%7C0%7C%7C%7C&sdata=dsvMTBN3azRnAJx85u6gFZEtrETYkRaht6tpc5ZWLV0%3D&reserved=0) | Recorded train the trainer for this Session |
+| Videos            | - [Train the Trainer Recording - Coming soon!]() | Recorded train the trainer for this Session |
 
 ## Get Started
 
