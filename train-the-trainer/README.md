@@ -16,7 +16,7 @@ code.
 | Resources          | Links                            | Description |
 |-------------------|----------------------------------|-------------------|
 | PowerPoint        | - [Presentation](https://aka.ms/AArx7pc) | Slides |
-| Videos            | - [Train the Trainer Recording - Coming soon!]() | Recorded train the trainer for this Session |
+| Videos            | - [Train the Trainer Recording](https://aka.ms/AAryr1d) | Recorded train the trainer for this Session |
 
 ## Get Started
 
