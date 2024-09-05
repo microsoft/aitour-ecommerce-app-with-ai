@@ -36,10 +36,10 @@ Check the following materials to know more about this session.
 
 | Resources          | Links                             | Description        |
 |:-------------------|:----------------------------------|:-------------------|
-| Train the Trainer | [Main](./train-the-trainer/README.md) | The main goal of the document is to outline the necessary steps and requirements to run the session. Also including links to the session recordings and session slides.|
-| Train the Trainer | [Requirements and Preparation](./train-the-trainer/RequirementsAndPreparation.md) | The main goal of the document is to outline the necessary steps and requirements for running the demo session in both Windows and CodeSpaces environments, including setting up the environment, accessing GPT and ADA models, and preparing the source code. |
-| Train the Trainer | [Demo steps using Visual Studio 2022](./train-the-trainer/step-by-step-vs2022.md) | The main goal of the document is to provide a detailed guide for setting up and running the demo project using Visual Studio 2022, including implementing AI search with Semantic Kernel and improving the response message.  |
-| Train the Trainer | [Demo Steps using CodeSpaces](./train-the-trainer/step-by-step-codespaces.md) | The main goal of the document is to provide a detailed guide for setting up and running the demo project using GitHub Codespaces, including implementing AI search with Semantic Kernel and improving the response message. |
+| Session Delivery Resources | [Main](./session-delivery-resources/README.md) | The main goal of the document is to outline the necessary steps and requirements to run the session. Also including links to the session recordings and session slides.|
+| Session Delivery Resources | [Requirements and Preparation](./session-delivery-resources/RequirementsAndPreparation.md) | The main goal of the document is to outline the necessary steps and requirements for running the demo session in both Windows and CodeSpaces environments, including setting up the environment, accessing GPT and ADA models, and preparing the source code. |
+| Session Delivery Resources | [Demo steps using Visual Studio 2022](./session-delivery-resources/step-by-step-vs2022.md) | The main goal of the document is to provide a detailed guide for setting up and running the demo project using Visual Studio 2022, including implementing AI search with Semantic Kernel and improving the response message.  |
+| Session Delivery Resources | [Demo Steps using CodeSpaces](./session-delivery-resources/step-by-step-codespaces.md) | The main goal of the document is to provide a detailed guide for setting up and running the demo project using GitHub Codespaces, including implementing AI search with Semantic Kernel and improving the response message. |
 
 ## Additional Resources and Continued Learning
 
