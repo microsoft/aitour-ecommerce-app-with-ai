@@ -1,3 +1,5 @@
+The following resources are intended for a presenter to learn and deliver the session.
+
 ## How To Use
 
 Welcome,
