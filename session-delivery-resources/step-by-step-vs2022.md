@@ -29,6 +29,8 @@ The main goal of this document is to provide a detailed guide for setting up and
   - `Microsoft.SemanticKernel.Plugins.Memory`
   - `System.Linq.Async`
 
+- ***(Optional)**: You can edit the Products .cs project file, and uncomment the specific nuget packages. Some packages may got new versions and broke compatibility.*
+
 - Explain the process of a vector search.
 
 - Include hidden file `.\src\Products\Memory\MemoryContext.cs`.
@@ -59,11 +61,11 @@ The current logic shows a product result if found, and if not found, asks the qu
 
 It looks like the chat implementation opens the GPT model to answer all questions. Let us fix this with a system prompt message. In `InitMemoryContext()`, update this code:
 
-    ```csharp
-    // create chat history
-    _chatHistory = new ChatHistory();
-    _chatHistory.AddSystemMessage("You are a useful assistant. You always reply with a short and funny message. If you do not know an answer, you say 'I don't know that.' You only answer questions related to outdoor camping products. For any other type of questions, explain to the user that you only answer outdoor camping products questions. Do not store memory of the chat conversation.");
-    ```
+```csharp
+// create chat history
+_chatHistory = new ChatHistory();
+_chatHistory.AddSystemMessage("You are a useful assistant. You always reply with a short and funny message. If you do not know an answer, you say 'I don't know that.' You only answer questions related to outdoor camping products. For any other type of questions, explain to the user that you only answer outdoor camping products questions. Do not store memory of the chat conversation.");
+```
 
 - Ask the questions again. The Search should not respond to questions not related to Outdoor Camping Products.
 
@@ -71,21 +73,21 @@ It looks like the chat implementation opens the GPT model to answer all question
 
 Now let us improve the response message. In the `Search()` function, add this code before the return:
 
-    ```csharp
-    // let's improve the response message
-    var prompt = @$"You are an intelligent assistant helping Contoso Inc clients with their search about outdoor product. 
-    Generate a catchy and friendly message using the following information:
+```csharp
+// let's improve the response message
+var prompt = @$"You are an intelligent assistant helping Contoso Inc clients with their search about outdoor product. 
+Generate a catchy and friendly message using the following information:
     - User Question: {search}
     - Found Product Name: {firstProduct.Name}
-    Include the found product information in the response to the user question.";
-    _chatHistory.AddUserMessage(prompt);
-    var resultPrompt = await _chat.GetChatMessageContentsAsync(_chatHistory);
-    responseText = resultPrompt[1](https://microsoft.sharepoint.com/teams/AI-Tour-FY25/Shared%20Documents/GS-BRK-ecommerce-app-with-ai/GS-BRK-ecommerce-app-with-ai%20-%20Demo%20Step-by-step%20-%20VS2022.docx?web=1).Content;
-    ```
+Include the found product information in the response to the user question.";
+_chatHistory.AddUserMessage(prompt);
+var resultPrompt = await _chat.GetChatMessageContentsAsync(_chatHistory);
+responseText = resultPrompt[0].Content;
+```
 
 - Explain the process to change and improve the prompt, like adding the product description and price. Prompty is here to help!
 
-- Add the NuGet package: `Microsoft.SemanticKernel.Prompty`. 
+- Show the NuGet package that is already in the project: `Microsoft.SemanticKernel.Prompty`.
 
 - Copy the supporting prompty files from `.\srcDemo\Products\` to `.\src\Products\`. 
   - ***Note**: The `.env` file should be previously completed with the Azure OpenAI information.*
@@ -100,9 +102,9 @@ Now let us improve the response message. In the `Search()` function, add this co
 
 Change the improve message code to this one:
 
-    ```csharp
-    // let's improve the response message
-    KernelArguments kernelArguments = new()
+```csharp
+// let's improve the response message
+KernelArguments kernelArguments = new()
     {
       { "productid", $"{firstProduct.Id.ToString()}" },
       { "productname", $"{firstProduct.Name}" },
@@ -110,9 +112,9 @@ Change the improve message code to this one:
       { "productprice", $"{firstProduct.Price}" },
       { "question", $"{search}" }
     };
-    var prompty = _kernel.CreateFunctionFromPromptyFile("aisearchresponse.prompty");
-    responseText = await prompty.InvokeAsync<string>(_kernel, kernelArguments);
-    ```
+var prompty = _kernel.CreateFunctionFromPromptyFile("aisearchresponse.prompty");
+responseText = await prompty.InvokeAsync<string>(_kernel, kernelArguments);
+```
 
 ### Aspire
 
