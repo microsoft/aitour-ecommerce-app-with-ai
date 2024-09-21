@@ -53,7 +53,7 @@ public class MemoryContext
 
         // create chat history
         _chatHistory = new ChatHistory();
-        _chatHistory.AddSystemMessage("You are a useful assistant. You always reply with a short and funny message. If you don't know an answer, you say 'I don't know that.' You only answers questions relates to outdoor camping products. For any other type of questions, explain the user that you only answer outdoor camping products questions. Do not store memory of the chat conversation.");
+        _chatHistory.AddSystemMessage("You are a useful assistant. You always reply with a short and funny message. If you do not know an answer, you say 'I don't know that.' You only answer questions related to outdoor camping products. For any other type of questions, explain to the user that you only answer outdoor camping products questions. Do not store memory of the chat conversation.");
 
         FillProductsAsync(db);
     }
@@ -84,14 +84,14 @@ public class MemoryContext
 
         // search the vector database for the most similar product        
         var memorySearchResult = await _memory.SearchAsync(MemoryCollectionName, search).FirstOrDefaultAsync();
-        if (memorySearchResult != null && memorySearchResult.Relevance > 0.8)
+        if (memorySearchResult != null && memorySearchResult.Relevance > 0.6)
         {
             // product found, search the db for the product details
             var prodId = memorySearchResult.Metadata.Id;
             firstProduct = await db.Product.FindAsync(int.Parse(prodId));
             if (firstProduct != null)
             {
-                responseText = $"The product [{firstProduct.Name}] fits with the search criteria [{search}]";
+                responseText = $"The product [{firstProduct.Name}] fits with the search criteria [{search}][{memorySearchResult.Relevance.ToString("0.00")}]";
             }
         }
 
@@ -102,26 +102,24 @@ public class MemoryContext
             var result = await _chat.GetChatMessageContentsAsync(_chatHistory);
             responseText = result[^1].Content;
             _chatHistory.AddAssistantMessage(responseText);
-            firstProduct = new Product();
         }
 
         // let's improve the response message
         KernelArguments kernelArguments = new()
-        {
-            { "productid", $"{firstProduct.Id.ToString()}" },
-            { "productname", $"{firstProduct.Name}" },
-            { "productdescription", $"{firstProduct.Description}" },
-            { "productprice", $"{firstProduct.Price}" },
-            { "question", $"{search}" }
-        };
+    {
+      { "productid", $"{firstProduct.Id.ToString()}" },
+      { "productname", $"{firstProduct.Name}" },
+      { "productdescription", $"{firstProduct.Description}" },
+      { "productprice", $"{firstProduct.Price}" },
+      { "question", $"{search}" }
+    };
         var prompty = _kernel.CreateFunctionFromPromptyFile("aisearchresponse.prompty");
         responseText = await prompty.InvokeAsync<string>(_kernel, kernelArguments);
-
 
         // create a response object
         return new SearchResponse
         {
-            Products = [firstProduct],
+            Products = firstProduct == null ? [new Product()] : [firstProduct],
             Response = responseText
         };
     }

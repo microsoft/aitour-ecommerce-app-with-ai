@@ -83,14 +83,14 @@ public class MemoryContext
 
         // search the vector database for the most similar product        
         var memorySearchResult = await _memory.SearchAsync(MemoryCollectionName, search).FirstOrDefaultAsync();
-        if (memorySearchResult != null && memorySearchResult.Relevance > 0.8)
+        if (memorySearchResult != null && memorySearchResult.Relevance > 0.6)
         {
             // product found, search the db for the product details
             var prodId = memorySearchResult.Metadata.Id;
             firstProduct = await db.Product.FindAsync(int.Parse(prodId));
             if (firstProduct != null)
             {
-                responseText = $"The product [{firstProduct.Name}] fits with the search criteria [{search}]";
+                responseText = $"The product [{firstProduct.Name}] fits with the search criteria [{search}][{memorySearchResult.Relevance.ToString("0.00")}]";
             }
         }
 

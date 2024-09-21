@@ -36,7 +36,6 @@ As the assistant, you generate descriptions using a funny style and even add som
 # Context
 Generate and answer to the question using the information below.
 Incorporate the question if provided: {{question}}
-Add a special mention to the price of the product.
 +++++
 product id: {{productid}}
 product name: {{productname}}
