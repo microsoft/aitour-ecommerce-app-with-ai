@@ -16,8 +16,9 @@ Along with the video of the presentation, this document will link to all the ass
 
 | Resources          | Links                            | Description |
 |-------------------|----------------------------------|-------------------|
-| PowerPoint        | - [Presentation](https://aka.ms/AArx7pc) | Slides |
-| Videos            | - [Session Recording](https://aka.ms/AAryr1d) | Recorded Session |
+| PowerPoint - English        | - [Presentation](https://aka.ms/AArx7pc) | Slides in English |
+| PowerPoint - Spanish        | - [Presentation](https://aka.ms/AAsd4jc) | Slides in Spanish |
+| Videos            | - [Session Recording](https://aka.ms/AAryr1d) | Recorded Session in English|
 
 ## Get Started
 
