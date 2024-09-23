@@ -16,8 +16,7 @@ Along with the video of the presentation, this document will link to all the ass
 
 | Resources          | Links                            | Description |
 |-------------------|----------------------------------|-------------------|
-| PowerPoint - English        | - [Presentation](https://aka.ms/AArx7pc) | Slides in English |
-| PowerPoint - Spanish        | - [Presentation](https://aka.ms/AAsd4jc) | Slides in Spanish |
+| PowerPoint | - [Presentation](https://aka.ms/AArx7pc) | Slides, [Additional Languages](https://github.com/microsoft/aitour-ecommerce-app-with-ai/blob/main/session-delivery-resources/README.md#slides-in-additional-languages) |
 | Videos            | - [Session Recording](https://aka.ms/AAryr1d) | Recorded Session in English|
 
 ## Get Started
@@ -34,6 +33,11 @@ This repository is divided in to the following sections:
 
 The [slides](https://aka.ms/AArx7pc) have presenter notes in each part of the session
 
+### Slides in additional languages
+| Language | Last updated | 
+|------------------- | ---- |
+| [Spanish](https://aka.ms/AAsd4jc) | 2024.09.23 | 
+
 ### Session Recording Timing
 
 The [Session Recording](https://aka.ms/AAryr1d) have the following content in the video.
@@ -49,3 +53,10 @@ The [Session Recording](https://aka.ms/AAryr1d) have the following content in th
 | 23:00 - 34:25 | Demo - Prompty, lifecycle of LLM prompts |
 | 34:25 - 41:31 | Demo - AI + Aspire |
 | 41:31 - 45:00 | Session conclusion and takeaways |
+
+## Change Log
+Here is a log of the changes made to this file:
+
+| Date       | Changes |
+|------------|---------|
+| 2024.09.23 | Added Change log, Additional language section with Spanish PowerPoint slides |
