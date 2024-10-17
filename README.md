@@ -1,4 +1,6 @@
 # Infusing an eCommerce app with AI
+[![Azure AI Community Discord](
+https://dcbadge.vercel.app/api/server/ByRwuEEgH4)](https://discord.com/invite/ByRwuEEgH4?WT.mc_id=aiml-00001-leestott)
 
 This repo is a companion to this session at Microsoft AI Tour, a worldwide tour of events.
 
