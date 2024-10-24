@@ -45,7 +45,7 @@ public class MemoryContext
         _logger = logger;
 
         // create kernel and add chat completion
-        var modelId = "phi3.5";
+        var modelId = "llama3.2";
         var builderSK = Kernel.CreateBuilder();
         builderSK.AddOpenAIChatCompletion(
             modelId: modelId,
@@ -131,17 +131,19 @@ public class MemoryContext
             try
             {
                 // let's improve the response message
-                KernelArguments kernelArguments = new()
-                            {
-                              { "productid", $"{firstProduct.Id.ToString()}" },
-                              { "productname", $"{firstProduct.Name}" },
-                              { "productdescription", $"{firstProduct.Description}" },
-                              { "productprice", $"{firstProduct.Price}" },
-                              { "question", $"{search}" }
-                            };
-                var prompty = _kernel.CreateFunctionFromPromptyFile("aisearchresponse.prompty");
-                responseText = await prompty.InvokeAsync<string>(_kernel, kernelArguments);
-                _logger.LogInformation($"AI Prompty Response message: {responseText}");
+                var prompt = @$"You are an intelligent assistant helping Contoso Inc clients with their search about outdoor product. 
+Generate a catchy and friendly message using the following information:
+    - User Question: {search}
+    - Found Product Name: {firstProduct.Name}
+    - Found Product Id: {firstProduct.Id}
+    - Found Product Price: {firstProduct.Price}
+    - Found Product Description: {firstProduct.Description}
+Include the found product information in the response to the user question.";
+                _chatHistory.AddUserMessage(prompt);
+                var resultPrompt = await _chat.GetChatMessageContentsAsync(_chatHistory);
+                responseText = resultPrompt[0].Content;
+
+                _logger.LogInformation($"AI Response message: {responseText}");
             }
             catch (Exception e)
             {

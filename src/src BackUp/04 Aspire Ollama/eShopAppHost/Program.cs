@@ -2,6 +2,7 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 var ollama = builder.AddOllama("ollama", port: 11434)
     .AddModel("phi3.5")
+    .AddModel("llama3.2")
     .AddModel("nomic-embed-text")
     .WithDefaultModel("phi3.5")
     .WithDataVolume()
