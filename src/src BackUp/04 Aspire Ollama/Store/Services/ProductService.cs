@@ -48,9 +48,9 @@ public class ProductService
         try
         {
             // call the AI Endpoint
-            // var response = await httpClient.GetAsync($"/api/aisearch/{searchTerm}");
+            var response = await httpClient.GetAsync($"/api/aisearch/{searchTerm}");
 
-            var response = await httpClient.GetAsync($"/api/product/search/{searchTerm}");
+            //var response = await httpClient.GetAsync($"/api/product/search/{searchTerm}");
 
             var responseText = await response.Content.ReadAsStringAsync();
 
