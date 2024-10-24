@@ -21,6 +21,8 @@ using System.Diagnostics.Eventing.Reader;
 using static Microsoft.KernelMemory.Constants.CustomContext;
 using Microsoft.CodeAnalysis.Elfie.Diagnostics;
 using Microsoft.SemanticKernel.Plugins.Memory;
+using OpenAI;
+using Microsoft.SemanticKernel.Data;
 
 namespace Products.Memory;
 
@@ -49,14 +51,17 @@ public class MemoryContext
             modelId: modelId,
             endpoint: new Uri("http://localhost:11434/"),
             apiKey: "apikey");
+        // local text embedding generation
         builderSK.AddLocalTextEmbeddingGeneration();
+
+        // add volatile memory store
+        builderSK.AddVolatileVectorStore(MemoryCollectionName);
+
         _kernel = builderSK.Build();
 
         _chat = _kernel.GetRequiredService<IChatCompletionService>();
         _embeddingGenerator = _kernel.Services.GetRequiredService<ITextEmbeddingGenerationService>();
 
-        // create Semantic Memory
-        //_memory = new SemanticTextMemory(new VolatileMemoryStore(), _embeddingGenerator);
         // create Semantic Memory
         var memoryBuilder = new MemoryBuilder();
         memoryBuilder.WithTextEmbeddingGeneration(_embeddingGenerator);
@@ -68,10 +73,6 @@ public class MemoryContext
         _chatHistory.AddSystemMessage("You are a useful assistant. You always reply with a short and funny message. If you do not know an answer, you say 'I don't know that.' You only answer questions related to outdoor camping products. For any other type of questions, explain to the user that you only answer outdoor camping products questions. Do not store memory of the chat conversation.");
 
         FillProductsAsync(db);
-
-        // Import the text memory plugin into the Kernel.
-        TextMemoryPlugin memoryPlugin = new(_memory);
-        _kernel.ImportPluginFromObject(memoryPlugin);
     }
 
     public async Task FillProductsAsync(ProductDataContext db)
@@ -100,7 +101,7 @@ public class MemoryContext
         var responseText = "";
 
         // search the vector database for the most similar product        
-        var memorySearchResult = await _memory.SearchAsync(MemoryCollectionName, search, withEmbeddings: true).FirstOrDefaultAsync();
+        var memorySearchResult = await _memory.SearchAsync(MemoryCollectionName, search).FirstOrDefaultAsync();
         if (memorySearchResult != null && memorySearchResult.Relevance > 0.6)
         {
             _logger.LogInformation($"Product found in memory. ProdId: {memorySearchResult.Metadata.Id}, Relevance: {memorySearchResult.Relevance}");
