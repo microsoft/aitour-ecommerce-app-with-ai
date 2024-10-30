@@ -3,6 +3,7 @@ using DataEntities;
 using Microsoft.EntityFrameworkCore;
 using Products.Data;
 using System.Diagnostics;
+using Products.Memory;
 
 namespace Products.Endpoints;
 
@@ -93,15 +94,15 @@ public static class ProductEndpoints
             .Produces<List<Product>>(StatusCodes.Status200OK);
 
         #region AI Search Endpoint
-        //routes.MapGet("/api/aisearch/{search}",
-        //    async (string search, ProductDataContext db, MemoryContext mc) =>
-        //    {
-        //        var result = await mc.Search(search, db);
-        //        return Results.Ok(result);
-        //    })
-        //    .WithName("AISearch")
-        //    .Produces<SearchResponse>(StatusCodes.Status200OK)
-        //    .Produces(StatusCodes.Status404NotFound);
+        routes.MapGet("/api/aisearch/{search}",
+            async (string search, ProductDataContext db, MemoryContext mc) =>
+            {
+                var result = await mc.Search(search, db);
+                return Results.Ok(result);
+            })
+            .WithName("AISearch")
+            .Produces<SearchResponse>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
         #endregion
     }
 }

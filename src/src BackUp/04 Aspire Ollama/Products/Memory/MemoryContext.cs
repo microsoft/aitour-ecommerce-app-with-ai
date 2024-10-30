@@ -1,28 +1,14 @@
-﻿#pragma warning disable SKEXP0003
-#pragma warning disable SKEXP0001
-#pragma warning disable SKEXP0010
-#pragma warning disable SKEXP0011
-#pragma warning disable SKEXP0040
-#pragma warning disable SKEXP0050
-#pragma warning disable SKEXP0052
+﻿#pragma warning disable SKEXP0020
 
 using Microsoft.EntityFrameworkCore;
 using SearchEntities;
 using DataEntities;
 using Products.Data;
-using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Memory;
-using Microsoft.SemanticKernel.ChatCompletion;
-using Microsoft.SemanticKernel.Connectors.OpenAI;
-using System;
-using Microsoft.SemanticKernel.Embeddings;
-using Azure.AI.OpenAI;
-using System.Diagnostics.Eventing.Reader;
-using static Microsoft.KernelMemory.Constants.CustomContext;
-using Microsoft.CodeAnalysis.Elfie.Diagnostics;
-using Microsoft.SemanticKernel.Plugins.Memory;
-using OpenAI;
-using Microsoft.SemanticKernel.Data;
+using Microsoft.Extensions.AI;
+using Microsoft.SemanticKernel.Connectors.InMemory;
+using Microsoft.Extensions.VectorData;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using System.Reflection.Emit;
 
 namespace Products.Memory;
 
@@ -32,47 +18,40 @@ public class MemoryContext
 
     private ILogger _logger;
     private IConfiguration _config;
-    private ChatHistory _chatHistory;
-    public Kernel _kernel;
-    private IChatCompletionService _chat;
-    private ITextEmbeddingGenerationService _embeddingGenerator;
-    public ISemanticTextMemory _memory;
+
+    private IChatClient _chatClient;
+    private IEmbeddingGenerator<string, Embedding<float>> _embeddingGenerator;
+
+    private List<ChatMessage> _messages;
+    private IVectorStore _vectorStore;
+    private IVectorStoreRecordCollection<int, ProductVector> _productsVector;
 
     public bool memoryStarted = false;
 
-    public void InitMemoryContext(ILogger logger, IConfiguration config, ProductDataContext db)
+    public async Task InitMemoryContextAsync(ILogger logger, IConfiguration config, ProductDataContext db)
     {
         _logger = logger;
 
-        // create kernel and add chat completion
-        var modelId = "llama3.2";
-        var builderSK = Kernel.CreateBuilder();
-        builderSK.AddOpenAIChatCompletion(
-            modelId: modelId,
-            endpoint: new Uri("http://localhost:11434/"),
-            apiKey: "apikey");
-        // local text embedding generation
-        builderSK.AddLocalTextEmbeddingGeneration();
+        // AI models
+        _chatClient = new OllamaChatClient(new Uri("http://localhost:11434/"), "phi3.5");
+        _embeddingGenerator = new OllamaEmbeddingGenerator(new Uri("http://localhost:11434/"), "all-minilm");
 
-        // add volatile memory store
-        builderSK.AddVolatileVectorStore(MemoryCollectionName);
-
-        _kernel = builderSK.Build();
-
-        _chat = _kernel.GetRequiredService<IChatCompletionService>();
-        _embeddingGenerator = _kernel.Services.GetRequiredService<ITextEmbeddingGenerationService>();
-
-        // create Semantic Memory
-        var memoryBuilder = new MemoryBuilder();
-        memoryBuilder.WithTextEmbeddingGeneration(_embeddingGenerator);
-        memoryBuilder.WithMemoryStore(new VolatileMemoryStore());
-        _memory = memoryBuilder.Build();
+        // create vector store
+        _vectorStore = new InMemoryVectorStore();
+        _productsVector = _vectorStore.GetCollection<int, ProductVector>("products");
+        await _productsVector.CreateCollectionIfNotExistsAsync();
 
         // create chat history
-        _chatHistory = new ChatHistory();
-        _chatHistory.AddSystemMessage("You are a useful assistant. You always reply with a short and funny message. If you do not know an answer, you say 'I don't know that.' You only answer questions related to outdoor camping products. For any other type of questions, explain to the user that you only answer outdoor camping products questions. Do not store memory of the chat conversation.");
-
+        InitChatHistory();
         FillProductsAsync(db);
+    }
+
+    private void InitChatHistory()
+    {
+        _messages =
+        [
+            new ChatMessage(ChatRole.System, "You are an AI assistant that helps people find information. Answer questions using a direct style and short answers. Do not share more information that the requested by the users."),
+        ];
     }
 
     public async Task FillProductsAsync(ProductDataContext db)
@@ -85,12 +64,19 @@ public class MemoryContext
         {
             var productInfo = $"[{product.Name}] is a product that costs [{product.Price}] and is described as [{product.Description}]";
 
-            await _memory.SaveInformationAsync(
-                collection: MemoryCollectionName,
-                text: productInfo,
-                id: product.Id.ToString(),
-                description: product.Description,
-                kernel: _kernel);
+            // create a product vector from the product
+            var productVector = new ProductVector
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Price = product.Price,
+                ImageUrl = product.ImageUrl,
+                Description = product.Description,
+                ProductInformation = productInfo,
+                Vector = await _embeddingGenerator.GenerateEmbeddingVectorAsync(productInfo)
+            };
+
+            await _productsVector.UpsertAsync(productVector);
         }
     }
 
@@ -100,28 +86,43 @@ public class MemoryContext
         Product firstProduct = null;
         var responseText = "";
 
-        // search the vector database for the most similar product        
-        var memorySearchResult = await _memory.SearchAsync(MemoryCollectionName, search).FirstOrDefaultAsync();
-        if (memorySearchResult != null && memorySearchResult.Relevance > 0.6)
+        var queryEmbedding = await _embeddingGenerator.GenerateEmbeddingVectorAsync(search);
+
+        var searchOptions = new VectorSearchOptions()
         {
-            _logger.LogInformation($"Product found in memory. ProdId: {memorySearchResult.Metadata.Id}, Relevance: {memorySearchResult.Relevance}");
-            // product found, search the db for the product details
-            var prodId = memorySearchResult.Metadata.Id;
-            firstProduct = await db.Product.FindAsync(int.Parse(prodId));
-            if (firstProduct != null)
+            Top = 3,
+            VectorPropertyName = "Vector"
+        };
+
+        var resultSearch = await _productsVector.VectorizedSearchAsync(queryEmbedding, searchOptions);
+
+        await foreach (var result in resultSearch.Results)
+        {
+            if (result.Score > 0.4)
             {
-                responseText = $"The product [{firstProduct.Name}] fits with the search criteria [{search}][{memorySearchResult.Relevance.ToString("0.00")}]";
+                _logger.LogInformation($"Product found in memory. ProdId: {result.Record.Id}, Score: {result.Score}");
+                // product found, search the db for the product details
+
+                var productId = result?.Record?.Id;
+                if (productId.HasValue)
+                {
+                    firstProduct = await db.Product.FindAsync(productId.Value);
+                    responseText = $"The product [{firstProduct.Name}] fits with the search criteria [{search}][{result.Score?.ToString("0.00")}]";
+                }
             }
         }
 
         if (firstProduct == null)
         {
-            _logger.LogInformation("Product not found in memory, asking the AI");
             // no product found, ask the AI, keep the chat history
-            _chatHistory.AddUserMessage(search);
-            var result = await _chat.GetChatMessageContentsAsync(_chatHistory);
-            responseText = result[^1].Content;
-            _chatHistory.AddAssistantMessage(responseText);
+            _logger.LogInformation("Product not found in memory, asking the AI");
+            InitChatHistory();
+            _messages.Add(new ChatMessage(ChatRole.User, search));
+
+            var result = _chatClient.CompleteAsync(chatMessages: _messages);
+            responseText = result.Result.Message.ToString();
+            _messages.Add(new ChatMessage(ChatRole.Assistant, responseText));
+
             _logger.LogInformation($"AI response: {responseText}");
         }
         else
@@ -139,9 +140,10 @@ Generate a catchy and friendly message using the following information:
     - Found Product Price: {firstProduct.Price}
     - Found Product Description: {firstProduct.Description}
 Include the found product information in the response to the user question.";
-                _chatHistory.AddUserMessage(prompt);
-                var resultPrompt = await _chat.GetChatMessageContentsAsync(_chatHistory);
-                responseText = resultPrompt[0].Content;
+
+                _messages.Add(new ChatMessage(ChatRole.User, prompt));
+                var result = _chatClient.CompleteAsync(chatMessages: _messages);
+                responseText = result.Result.Message.ToString();
 
                 _logger.LogInformation($"AI Response message: {responseText}");
             }
@@ -168,7 +170,7 @@ public static class Extensions
         using var scope = host.Services.CreateScope();
         var services = scope.ServiceProvider;
         var context = services.GetRequiredService<MemoryContext>();
-        context.InitMemoryContext(
+        context.InitMemoryContextAsync(
             services.GetRequiredService<ILogger<ProductDataContext>>(),
             services.GetRequiredService<IConfiguration>(),
             services.GetRequiredService<ProductDataContext>());

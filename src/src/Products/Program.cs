@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Products.Data;
 using Products.Endpoints;
+using Products.Memory;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<ProductDataContext>(options =>
@@ -12,10 +13,10 @@ builder.Services.AddSingleton<IConfiguration>(sp =>
 });
 
 // add memory context
-//builder.Services.AddSingleton<MemoryContext>(sp =>
-//{
-//    return new MemoryContext();
-//});
+builder.Services.AddSingleton<MemoryContext>(sp =>
+{
+    return new MemoryContext();
+});
 
 // Add services to the container.
 var app = builder.Build();
@@ -30,6 +31,6 @@ app.UseStaticFiles();
 app.CreateDbIfNotExists();
 
 // init semantic memory
-// app.InitSemanticMemory();
+app.InitSemanticMemory();
 
 app.Run();

@@ -34,12 +34,10 @@
 		<PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0-rc.1.24457.2" />
 		
 		 <!--AI Search NuGet packages-->
-		<PackageReference Include="Microsoft.KernelMemory.SemanticKernelPlugin" Version="0.73.240906.1" />
-		<PackageReference Include="Microsoft.SemanticKernel" Version="1.19.0" />
-		<PackageReference Include="Microsoft.SemanticKernel.Plugins.Memory" Version="1.18.0-alpha" />
-		<PackageReference Include="SmartComponents.LocalEmbeddings.SemanticKernel" Version="0.1.0-preview10148" />
 		<PackageReference Include="System.Linq.Async" Version="6.0.1" />
-		<PackageReference Include="Microsoft.SemanticKernel.Prompty" Version="1.16.1-alpha" />
+		<PackageReference Include="Microsoft.Extensions.AI.Ollama" Version="9.0.0-preview.9.24525.1" />
+		<PackageReference Include="Microsoft.Extensions.VectorData.Abstractions" Version="9.0.0-preview.1.24523.1" />
+		<PackageReference Include="Microsoft.SemanticKernel.Connectors.InMemory" Version="1.25.0-preview" />
 	</ItemGroup>
 
 	<ItemGroup>

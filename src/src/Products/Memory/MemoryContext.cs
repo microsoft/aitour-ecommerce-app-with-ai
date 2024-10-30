@@ -52,7 +52,9 @@ public class MemoryContext
         _memory = memoryBuilder.Build();
 
         // create chat history
+        // create chat history
         _chatHistory = new ChatHistory();
+        _chatHistory.AddSystemMessage("You are a useful assistant. You always reply with a short and funny message. If you do not know an answer, you say 'I don't know that.' You only answer questions related to outdoor camping products. For any other type of questions, explain to the user that you only answer outdoor camping products questions. Do not store memory of the chat conversation.");
 
         FillProductsAsync(db);
     }
@@ -103,6 +105,17 @@ public class MemoryContext
             _chatHistory.AddAssistantMessage(responseText);
         }
 
+        // let's improve the response message
+        KernelArguments kernelArguments = new()
+    {
+      { "productid", $"{firstProduct.Id.ToString()}" },
+      { "productname", $"{firstProduct.Name}" },
+      { "productdescription", $"{firstProduct.Description}" },
+      { "productprice", $"{firstProduct.Price}" },
+      { "question", $"{search}" }
+    };
+        var prompty = _kernel.CreateFunctionFromPromptyFile("aisearchresponse.prompty");
+        responseText = await prompty.InvokeAsync<string>(_kernel, kernelArguments);
         // create a response object
         return new SearchResponse
         {
