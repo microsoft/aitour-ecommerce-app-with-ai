@@ -3,7 +3,7 @@
 @inject Store.Services.ProductService ProductService
 @inject IConfiguration Configuration
 @attribute [StreamRendering(true)]
-@rendermode InteractiveServer 
+@rendermode InteractiveServer
 
 <PageTitle>Search Products</PageTitle>
 
@@ -13,9 +13,14 @@
 
 <div class="form-group">
     <label for="search">Type your question:</label>
-    <div class="input-group" >
+    <div class="input-group">
         <input css type="text" id="search" class="form-control" @bind="searchTerm" />
         <button id="btnSearch" class="btn btn-primary" @onclick="DoSearch" type="submit">Search</button>
+    </div>
+    <br />
+    <div class="input-group">
+        <label for="smartSearch">Use Semantic Search: </label>
+        <InputCheckbox id="smartSearch" @bind-Value="smartSearch"></InputCheckbox>
     </div>
     <hr />
     <p class="quote">@aiResponse</p>
@@ -57,13 +62,14 @@ else
 @code {
     private string searchTerm = "";
     private List<DataEntities.Product>? products;
-    private string aiResponse = "";   
+    private string aiResponse = "";
     private string elapsedTime = "";
+    private bool smartSearch = false;
 
     private async Task DoSearch(MouseEventArgs e)
     {
         await Task.Delay(500);
-        var response = await ProductService.Search(searchTerm, true);
+        var response = await ProductService.Search(searchTerm, smartSearch);
         aiResponse = response.Response;
         products = response.Products;
         elapsedTime = response.ElapsedTime.ToString();
