@@ -63,7 +63,7 @@ else
     private async Task DoSearch(MouseEventArgs e)
     {
         await Task.Delay(500);
-        var response = await ProductService.Search(searchTerm);
+        var response = await ProductService.Search(searchTerm, true);
         aiResponse = response.Response;
         products = response.Products;
         elapsedTime = response.ElapsedTime.ToString();
