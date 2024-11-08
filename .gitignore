@@ -6,6 +6,6 @@
 **.suo
 **/.vs/**
 **.env**
-/src/src BackUp/04 Aspire Ollama/Products/Database.db-shm
-/src/src BackUp/04 Aspire Ollama/Products/Database.db-shm
-/src/src BackUp/04 Aspire Ollama/Products/Database.db-shm
+**Database.db-shm
+**Database.db-wal
+
