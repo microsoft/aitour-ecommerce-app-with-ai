@@ -12,15 +12,14 @@
 <p>Search our amazing outdoor products that you can purchase.</p>
 
 <div class="form-group">
-    <label for="search">Type your question:</label>
-    <div class="input-group">
-        <input css type="text" id="search" class="form-control" @bind="searchTerm" />
+    <label for="search" class="form-label">Type your question:</label>
+    <div class="input-group mb-3">
+        <input type="text" id="search" class="form-control" @bind="searchTerm" placeholder="Enter search term..." />
         <button id="btnSearch" class="btn btn-primary" @onclick="DoSearch" type="submit">Search</button>
     </div>
-    <br />
-    <div class="input-group">
-        <label for="smartSearch">Use Semantic Search: </label>
-        <InputCheckbox id="smartSearch" @bind-Value="smartSearch"></InputCheckbox>
+    <div class="form-check form-switch mb-3">
+        <InputCheckbox id="smartSearch2" @bind-Value="smartSearch" />
+        <label class="form-check-label" for="smartSearch">Use Semantic Search</label>
     </div>
     <hr />
     <p class="quote">@aiResponse</p>
@@ -28,6 +27,7 @@
     @* Uncomment this to show elapsed time *@
     @* <p class="smallquote">Elapsed Time: [@elapsedTime]</p> *@
 </div>
+
 
 @if (products == null)
 {
