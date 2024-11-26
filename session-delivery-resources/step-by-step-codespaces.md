@@ -119,7 +119,7 @@ The main goal of this document is to provide a detailed guide for setting up and
    Include the found product information in the response to the user question.";
    _chatHistory.AddUserMessage(prompt);
    var resultPrompt = await _chat.GetChatMessageContentsAsync(_chatHistory);
-   responseText = resultPrompt[1](https://microsoft.sharepoint.com/teams/AI-Tour-FY25/Shared%20Documents/GS-BRK-ecommerce-app-with-ai/GS-BRK-ecommerce-app-with-ai%20-%20Demo%20Step-by-step%20-%20CodeSpaces.docx?web=1).Content;
+   responseText = resultPrompt[^1].Content;
    ```
 
 2. Explain the process to change and improve the prompt, like adding the product description and price. Prompty is here to help!
