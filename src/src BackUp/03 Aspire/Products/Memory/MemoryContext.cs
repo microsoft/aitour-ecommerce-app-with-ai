@@ -102,27 +102,31 @@ public static class MemoryContextExtensions
         builder.Services.AddInMemoryVectorStoreRecordCollection<string, ProductVector>(MemoryCollectionName);
         builder.Services.AddVectorStoreTextSearch<ProductVector>();
         builder.Services.AddTransient<MemoryContext>();
+        
+        builder.Services.AddSingleton(sp =>
+            sp.GetRequiredKeyedService<IChatClient>("chat").AsChatCompletionService());
+
+        builder.Services.AddSingleton(sp =>
+            sp.GetRequiredKeyedService<IEmbeddingGenerator<string, Embedding<float>>>("embedding").AsTextEmbeddingGenerationService());
     }
 
     public static void AddAzureAI(this WebApplicationBuilder builder)
     {
         builder.AddAzureOpenAIClient("aoai");
 
-        builder.Services.AddSingleton<IChatCompletionService>(static sp =>
+        builder.Services.AddKeyedSingleton("chat", static (sp, _) =>
         {
             var config = sp.GetRequiredService<IConfiguration>();
             var chatDeploymentName = config["AZURE_OPENAI_MODEL"] ?? throw new ArgumentNullException(nameof(config), "AZURE_OPENAI_MODEL is required.");
 
-            var client = sp.GetRequiredService<AzureOpenAIClient>();
-            return new AzureOpenAIChatCompletionService(chatDeploymentName, client);
+            return sp.GetRequiredService<AzureOpenAIClient>().AsChatClient(chatDeploymentName);
         });
 
-        builder.Services.AddSingleton<ITextEmbeddingGenerationService>(static sp =>
+        builder.Services.AddKeyedSingleton("embedding", static (sp, _) =>
         {
             var config = sp.GetRequiredService<IConfiguration>();
             var deploymentName = config["AZURE_OPENAI_EMBEDDING_MODEL"] ?? throw new ArgumentNullException(nameof(config), "AZURE_OPENAI_EMBEDDING_MODEL is required.");
-            var client = sp.GetRequiredService<AzureOpenAIClient>();
-            return new AzureOpenAITextEmbeddingGenerationService(deploymentName, client);
+            return sp.GetRequiredService<AzureOpenAIClient>().AsEmbeddingGenerator(deploymentName);
         });
     }
 

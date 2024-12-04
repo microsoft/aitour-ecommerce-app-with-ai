@@ -110,21 +110,19 @@ public static class MemoryContextExtensions
     public static void AddAzureAI(this WebApplicationBuilder builder)
     {
         builder.AddAzureOpenAIClient("aoai");
-        builder.Services.AddSingleton(sp =>
+        builder.Services.AddKeyedSingleton("chat", static (sp, _) =>
         {
-            var client = sp.GetRequiredService<AzureOpenAIClient>();
             var config = sp.GetRequiredService<IConfiguration>();
             var chatDeploymentName = config["AZURE_OPENAI_MODEL"] ?? throw new ArgumentNullException(nameof(config), "AZURE_OPENAI_MODEL is required.");
 
-            return client.AsChatClient(modelId: chatDeploymentName);
+            return sp.GetRequiredService<AzureOpenAIClient>().AsChatClient(chatDeploymentName);
         });
 
-        builder.Services.AddSingleton(sp =>
+        builder.Services.AddKeyedSingleton("embedding", static (sp, _) =>
         {
-            var client = sp.GetRequiredService<AzureOpenAIClient>();
             var config = sp.GetRequiredService<IConfiguration>();
             var deploymentName = config["AZURE_OPENAI_EMBEDDING_MODEL"] ?? throw new ArgumentNullException(nameof(config), "AZURE_OPENAI_EMBEDDING_MODEL is required.");
-            return client.AsEmbeddingGenerator(deploymentName);
+            return sp.GetRequiredService<AzureOpenAIClient>().AsEmbeddingGenerator(deploymentName);
         });
     }
 
