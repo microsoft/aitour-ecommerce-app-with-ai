@@ -104,7 +104,7 @@ public static class MemoryContextExtensions
             sp.GetRequiredKeyedService<IChatClient>("chat").AsChatCompletionService());
 
         builder.Services.AddSingleton(static sp =>
-            sp.GetRequiredKeyedService<IEmbeddingGenerator<string, Embedding<float>>>("embedding").AsEmbeddingGenerationService());
+            sp.GetRequiredKeyedService<IEmbeddingGenerator<string, Embedding<float>>>("embedding").AsTextEmbeddingGenerationService());
     }
 
     public static void AddAzureAI(this WebApplicationBuilder builder)
