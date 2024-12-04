@@ -22,7 +22,7 @@ namespace Products.Memory;
 
 public class MemoryContext(
     ProductDataContext db,
-    IEmbeddingGenerationService<string, float> textEmbeddingGeneration,
+    ITextEmbeddingGenerationService textEmbeddingGeneration,
     IVectorStoreRecordCollection<int, ProductVector> vectorStoreRecordCollection,
     IChatCompletionService chatClient)
 {
