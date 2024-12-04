@@ -11,12 +11,6 @@ builder.Services.AddSingleton<IConfiguration>(sp =>
     return builder.Configuration;
 });
 
-// add memory context
-//builder.Services.AddSingleton<MemoryContext>(sp =>
-//{
-//    return new MemoryContext();
-//});
-
 // Add services to the container.
 var app = builder.Build();
 
@@ -28,8 +22,5 @@ app.MapProductEndpoints();
 app.UseStaticFiles();
 
 app.CreateDbIfNotExists();
-
-// init semantic memory
-// app.InitSemanticMemory();
 
 app.Run();

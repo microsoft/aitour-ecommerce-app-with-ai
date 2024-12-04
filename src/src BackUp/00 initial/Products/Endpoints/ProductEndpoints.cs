@@ -91,17 +91,5 @@ public static class ProductEndpoints
         })
             .WithName("SearchAllProducts")
             .Produces<List<Product>>(StatusCodes.Status200OK);
-
-        #region AI Search Endpoint
-        //routes.MapGet("/api/aisearch/{search}",
-        //    async (string search, ProductDataContext db, MemoryContext mc) =>
-        //    {
-        //        var result = await mc.Search(search, db);
-        //        return Results.Ok(result);
-        //    })
-        //    .WithName("AISearch")
-        //    .Produces<SearchResponse>(StatusCodes.Status200OK)
-        //    .Produces(StatusCodes.Status404NotFound);
-        #endregion
     }
 }

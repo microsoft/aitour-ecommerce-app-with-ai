@@ -13,10 +13,9 @@ builder.Services.AddSingleton<IConfiguration>(sp =>
 });
 
 // add memory context
-builder.Services.AddSingleton<MemoryContext>(sp =>
-{
-    return new MemoryContext();
-});
+builder.AddSemanticKernel();
+
+builder.AddAzureAI();
 
 // Add services to the container.
 var app = builder.Build();
@@ -31,6 +30,6 @@ app.UseStaticFiles();
 app.CreateDbIfNotExists();
 
 // init semantic memory
-app.InitSemanticMemory();
+await app.InitSemanticMemoryAsync();
 
 app.Run();

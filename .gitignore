@@ -9,3 +9,5 @@
 **Database.db-shm
 **Database.db-wal
 
+appsettings.Development.json
+.env

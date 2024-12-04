@@ -1,19 +1,38 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-var ollama = builder.AddOllama("ollama", port: 11434)
-    .AddModel("phi3.5")
-    .AddModel("llama3.2")
-    .AddModel("all-minilm")
-    .WithDefaultModel("phi3.5")
-    .WithDataVolume()
-    .WithContainerRuntimeArgs("--gpus=all")
-    .WithOpenWebUI();
+var products = builder.AddProject<Projects.Products>("products");
 
-var products = builder.AddProject<Projects.Products>("products")
-    .WithReference(ollama);
+if (builder.ExecutionContext.IsPublishMode)
+{
+    var ai = builder.AddAzureOpenAI("aoai")
+        .AddDeployment(new AzureOpenAIDeployment("gpt4o", "gpt4o", "2024-08-06"))
+        .AddDeployment(new AzureOpenAIDeployment("text-embedding-ada-002", "text-embedding-ada-002", "2"));
+
+    products
+        .WithReference(ai)
+        .WithEnvironment("AZURE_OPENAI_MODEL", "gpt4o")
+        .WithEnvironment("AZURE_OPENAI_EMBEDDING_MODEL", "text-embedding-ada-002");
+}
+else
+{
+    var ollama = builder.AddOllama("ollama")
+        .WithDataVolume()
+        .WithGPUSupport()
+        .WithOpenWebUI();
+
+    var chat = ollama.AddModel("chat", "phi3.5");
+    var embedding = ollama.AddModel("embedding", "all-minilm");
+
+    products
+        .WithReference(chat)
+        .WithReference(embedding)
+        .WaitFor(chat)
+        .WaitFor(embedding);
+}
 
 var store = builder.AddProject<Projects.Store>("store")
-    .WithReference(products)
-    .WithExternalHttpEndpoints();
+        .WithReference(products)
+        .WithExternalHttpEndpoints()
+        .WaitFor(products);
 
 builder.Build().Run();
