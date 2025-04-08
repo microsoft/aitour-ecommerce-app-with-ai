@@ -11,54 +11,29 @@ using SearchEntities;
 using DataEntities;
 using Products.Data;
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Memory;
 using Microsoft.SemanticKernel.ChatCompletion;
-using Microsoft.SemanticKernel.Connectors.OpenAI;
-using System;
+using Microsoft.SemanticKernel.Embeddings;
+using Microsoft.Extensions.VectorData;
+using Microsoft.Extensions.AI;
+using Azure.AI.OpenAI;
+using System.ClientModel;
+using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
+using System.Diagnostics;
 
 namespace Products.Memory;
 
-public class MemoryContext
+public class MemoryContext(
+    ProductDataContext db,
+    ITextEmbeddingGenerationService textEmbeddingGeneration,
+    IVectorStoreRecordCollection<string, ProductVector> vectorStoreRecordCollection,
+    IChatCompletionService chatCompletionService)
 {
-    const string MemoryCollectionName = "products";
+    private readonly ChatHistory _chatHistory = [];
 
-    private ILogger _logger;
-    private IConfiguration _config;
-    private ChatHistory _chatHistory;
-    public Kernel _kernel;
-    private IChatCompletionService _chat;
-    public ISemanticTextMemory _memory;
-
-    public void InitMemoryContext(ILogger logger, IConfiguration config, ProductDataContext db)
+    public async Task FillProductsAsync()
     {
-        _logger = logger;
+        await vectorStoreRecordCollection.CreateCollectionIfNotExistsAsync();
 
-        // get the configuration settings
-        var chatDeploymentName = config["AZURE_OPENAI_MODEL"];
-        var endpoint = config["AZURE_OPENAI_ENDPOINT"];
-        var apiKey = config["AZURE_OPENAI_APIKEY"];
-        var ada002 = config["AZURE_OPENAI_ADA02"];
-
-        // create kernel and add chat completion
-        var builderSK = Kernel.CreateBuilder().
-        AddAzureOpenAIChatCompletion(chatDeploymentName, endpoint, apiKey);
-        _kernel = builderSK.Build();
-        _chat = _kernel.GetRequiredService<IChatCompletionService>();
-
-        // create Semantic Memory
-        var memoryBuilder = new MemoryBuilder();
-        memoryBuilder.WithAzureOpenAITextEmbeddingGeneration(ada002, endpoint, apiKey);
-        memoryBuilder.WithMemoryStore(new VolatileMemoryStore());
-        _memory = memoryBuilder.Build();
-
-        // create chat history
-        _chatHistory = new ChatHistory();
-
-        FillProductsAsync(db);
-    }
-
-    public async Task FillProductsAsync(ProductDataContext db)
-    {
         // get a copy of the list of products
         var products = await db.Product.ToListAsync();
 
@@ -67,61 +42,126 @@ public class MemoryContext
         {
             var productInfo = $"[{product.Name}] is a product that costs [{product.Price}] and is described as [{product.Description}]";
 
-            await _memory.SaveInformationAsync(
-                collection: MemoryCollectionName,
-                text: productInfo,
-                id: product.Id.ToString(),
-                description: product.Description);
+            var productVector = new ProductVector
+            {
+                Id = product.Id.ToString(),
+                Name = product.Name,
+                Description = product.Description,
+                TextEmbedding = await textEmbeddingGeneration.GenerateEmbeddingAsync(productInfo)
+            };
+
+            await vectorStoreRecordCollection.UpsertAsync(productVector);
         }
     }
 
     public async Task<SearchResponse> Search(string search, ProductDataContext db)
     {
-        var response = new SearchResponse();
-        Product firstProduct = null;
+        Product? firstProduct = null;
         var responseText = "";
 
-        // search the vector database for the most similar product        
-        var memorySearchResult = await _memory.SearchAsync(MemoryCollectionName, search).FirstOrDefaultAsync();
-        if (memorySearchResult != null && memorySearchResult.Relevance > 0.6)
+        // search the vector database for the most similar product
+        var searchVector = await textEmbeddingGeneration.GenerateEmbeddingAsync(search);
+        var memorySearchResult = await vectorStoreRecordCollection.VectorizedSearchAsync(searchVector, new() { Top = 1 });
+
+        var firstResult = await memorySearchResult.Results.FirstOrDefaultAsync();
+
+        if (firstResult is not null && firstResult.Score > 0.6)
         {
             // product found, search the db for the product details
-            var prodId = memorySearchResult.Metadata.Id;
+            var prodId = firstResult.Record.Id;
             firstProduct = await db.Product.FindAsync(int.Parse(prodId));
-            if (firstProduct != null)
+            if (firstProduct is not null)
             {
-                responseText = $"The product [{firstProduct.Name}] fits with the search criteria [{search}][{memorySearchResult.Relevance.ToString("0.00")}]";
+                responseText = $"The product [{firstProduct.Name}] fits with the search criteria [{search}][{firstResult.Score}]";
             }
         }
 
-        if (firstProduct == null)
+        if (firstProduct is null)
         {
             // no product found, ask the AI, keep the chat history
             _chatHistory.AddUserMessage(search);
-            var result = await _chat.GetChatMessageContentsAsync(_chatHistory);
-            responseText = result[^1].Content;
+            var result = await chatCompletionService.GetChatMessageContentsAsync(_chatHistory);
+            responseText = result[^1].Content ?? "";
             _chatHistory.AddAssistantMessage(responseText);
         }
 
         // create a response object
         return new SearchResponse
         {
-            Products = firstProduct == null ? [new Product()] : [firstProduct],
+            Products = firstProduct is null ? [new Product()] : [firstProduct],
             Response = responseText
         };
     }
 }
 
-public static class Extensions
+public static class MemoryContextExtensions
 {
-    public static void InitSemanticMemory(this IHost host)
+    const string MemoryCollectionName = "products";
+
+    public static void AddSemanticKernel(this WebApplicationBuilder builder)
     {
-        using var scope = host.Services.CreateScope();
-        var services = scope.ServiceProvider;
-        var context = services.GetRequiredService<MemoryContext>();
-        context.InitMemoryContext(
-            services.GetRequiredService<ILogger<ProductDataContext>>(),
-            services.GetRequiredService<IConfiguration>(),
-            services.GetRequiredService<ProductDataContext>());
+        builder.Services.AddSingleton(static sp => new Kernel(sp));
+        builder.Services.AddInMemoryVectorStoreRecordCollection<string, ProductVector>(MemoryCollectionName);
+        builder.Services.AddVectorStoreTextSearch<ProductVector>();
+        builder.Services.AddTransient<MemoryContext>();
+
+        builder.Services.AddSingleton(sp =>
+            sp.GetRequiredKeyedService<IChatClient>("chat").AsChatCompletionService());
+
+        builder.Services.AddSingleton(sp =>
+            sp.GetRequiredKeyedService<IEmbeddingGenerator<string, Embedding<float>>>("embedding").AsTextEmbeddingGenerationService());
     }
+
+    public static void AddAzureAI(this WebApplicationBuilder builder)
+    {
+        builder.Services.AddSingleton(static sp =>
+        {
+            var config = sp.GetRequiredService<IConfiguration>();
+            // get the configuration settings
+            var endpoint = config["AZURE_OPENAI_ENDPOINT"] ?? throw new ArgumentNullException(nameof(config), "AZURE_OPENAI_ENDPOINT is required.");
+            var apiKey = config["AZURE_OPENAI_APIKEY"] ?? throw new ArgumentNullException(nameof(config), "AZURE_OPENAI_APIKEY is required.");
+
+            // create the chat client
+            return new AzureOpenAIClient(new Uri(endpoint), new ApiKeyCredential(apiKey));
+        });
+
+        builder.Services.AddKeyedSingleton("chat", static (sp, _) =>
+        {
+            var config = sp.GetRequiredService<IConfiguration>();
+            var chatDeploymentName = config["AZURE_OPENAI_MODEL"] ?? throw new ArgumentNullException(nameof(config), "AZURE_OPENAI_MODEL is required.");
+
+            return sp.GetRequiredService<AzureOpenAIClient>().AsChatClient(chatDeploymentName);
+        });
+
+        builder.Services.AddKeyedSingleton("embedding", static (sp, _) =>
+        {
+            var config = sp.GetRequiredService<IConfiguration>();
+            var deploymentName = config["AZURE_OPENAI_EMBEDDING_MODEL"] ?? throw new ArgumentNullException(nameof(config), "AZURE_OPENAI_EMBEDDING_MODEL is required.");
+            return sp.GetRequiredService<AzureOpenAIClient>().AsEmbeddingGenerator(deploymentName);
+        });
+    }
+
+    public static async Task InitSemanticMemoryAsync(this WebApplication app)
+    {
+        using var scope = app.Services.CreateScope();
+        var services = scope.ServiceProvider;
+        var db = services.GetRequiredService<ProductDataContext>();
+        var memory = services.GetRequiredService<MemoryContext>();
+        await memory.FillProductsAsync();
+    }
+}
+
+public sealed class ProductVector
+{
+    [VectorStoreRecordKey]
+    public required string Id { get; set; }
+
+    [VectorStoreRecordData]
+    public string? Name { get; set; }
+
+    [VectorStoreRecordData]
+    public string? Description { get; set; }
+
+    [VectorStoreRecordVector(1536, DistanceFunction.CosineDistance)]
+    public required ReadOnlyMemory<float> TextEmbedding { get; set; }
 }

@@ -1,138 +1,71 @@
-﻿#pragma warning disable SKEXP0020
+﻿#pragma warning disable SKEXP0003
+#pragma warning disable SKEXP0001
+#pragma warning disable SKEXP0010
+#pragma warning disable SKEXP0011
+#pragma warning disable SKEXP0040
+#pragma warning disable SKEXP0050
+#pragma warning disable SKEXP0052
 
 using Microsoft.EntityFrameworkCore;
 using SearchEntities;
 using DataEntities;
 using Products.Data;
-using Microsoft.Extensions.AI;
-using Microsoft.SemanticKernel.Connectors.InMemory;
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
+using Microsoft.SemanticKernel.Embeddings;
 using Microsoft.Extensions.VectorData;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
-using System.Reflection.Emit;
+using Microsoft.Extensions.AI;
+using Azure.AI.OpenAI;
+using ChatMessageContent = Microsoft.SemanticKernel.ChatMessageContent;
 
 namespace Products.Memory;
 
-public class MemoryContext
+public class MemoryContext(
+    ProductDataContext db,
+    ITextEmbeddingGenerationService textEmbeddingGeneration,
+    IVectorStoreRecordCollection<int, ProductVector> vectorStoreRecordCollection,
+    IChatCompletionService chatClient)
 {
-    const string MemoryCollectionName = "products";
-
-    private ILogger _logger;
-    private IConfiguration _config;
-
-    private IChatClient _chatClient;
-    private IEmbeddingGenerator<string, Embedding<float>> _embeddingGenerator;
-
-    private List<ChatMessage> _messages;
-    private IVectorStore _vectorStore;
-    private IVectorStoreRecordCollection<int, ProductVector> _productsVector;
-
-    public bool memoryStarted = false;
-
-    public async Task InitMemoryContextAsync(ILogger logger, IConfiguration config, ProductDataContext db)
-    {
-        _logger = logger;
-
-        // AI models
-        _chatClient = new OllamaChatClient(new Uri("http://localhost:11434/"), "phi3.5");
-        _embeddingGenerator = new OllamaEmbeddingGenerator(new Uri("http://localhost:11434/"), "all-minilm");
-
-        // create vector store
-        _vectorStore = new InMemoryVectorStore();
-        _productsVector = _vectorStore.GetCollection<int, ProductVector>("products");
-        await _productsVector.CreateCollectionIfNotExistsAsync();
-
-        // create chat history
-        InitChatHistory();
-        FillProductsAsync(db);
-    }
-
-    private void InitChatHistory()
-    {
-        _messages =
-        [
-            new ChatMessage(ChatRole.System, "You are an AI assistant that helps people find information. Answer questions using a direct style and short answers. Do not share more information that the requested by the users."),
+    private readonly ChatHistory _messages = [
+            new ChatMessageContent(AuthorRole.System, "You are an AI assistant that helps people find information. Answer questions using a direct style and short answers. Do not share more information that the requested by the users."),
         ];
-    }
 
-    public async Task FillProductsAsync(ProductDataContext db)
+    public async Task FillProductsAsync()
     {
+        await vectorStoreRecordCollection.CreateCollectionIfNotExistsAsync();
+
         // get a copy of the list of products
         var products = await db.Product.ToListAsync();
 
         // iterate over the products and add them to the memory
         foreach (var product in products)
         {
-            var productInfo = $"[{product.Name}] is a product that costs [{product.Price}] and is described as [{product.Description}]";
+            var productVector = ProductVector.FromProduct(product);
+            productVector.Vector = await textEmbeddingGeneration.GenerateEmbeddingAsync(productVector.ProductInformation);
 
-            // create a product vector from the product
-            var productVector = new ProductVector
-            {
-                Id = product.Id,
-                Name = product.Name,
-                Price = product.Price,
-                ImageUrl = product.ImageUrl,
-                Description = product.Description,
-                ProductInformation = productInfo,
-                Vector = await _embeddingGenerator.GenerateEmbeddingVectorAsync(productInfo)
-            };
-
-            await _productsVector.UpsertAsync(productVector);
+            await vectorStoreRecordCollection.UpsertAsync(productVector);
         }
     }
 
     public async Task<SearchResponse> Search(string search, ProductDataContext db)
     {
-        var response = new SearchResponse();
-        Product firstProduct = null;
-        var responseText = "";
+        Product? firstProduct = null;
+        string? responseText = null;
 
-        var queryEmbedding = await _embeddingGenerator.GenerateEmbeddingVectorAsync(search);
+        // search the vector database for the most similar product
+        var searchVector = await textEmbeddingGeneration.GenerateEmbeddingAsync(search);
+        var memorySearchResult = await vectorStoreRecordCollection.VectorizedSearchAsync(searchVector, new() { Top = 1 });
 
-        var searchOptions = new VectorSearchOptions()
+        var firstResult = await memorySearchResult.Results.FirstOrDefaultAsync();
+
+        if (firstResult is not null && firstResult.Score > 0.5)
         {
-            Top = 3,
-            VectorPropertyName = "Vector"
-        };
-
-        var resultSearch = await _productsVector.VectorizedSearchAsync(queryEmbedding, searchOptions);
-
-        await foreach (var result in resultSearch.Results)
-        {
-            if (result.Score > 0.4)
+            // product found, search the db for the product details
+            var prodId = firstResult.Record.Id;
+            firstProduct = await db.Product.FindAsync(prodId);
+            if (firstProduct is not null)
             {
-                _logger.LogInformation($"Product found in memory. ProdId: {result.Record.Id}, Score: {result.Score}");
-                // product found, search the db for the product details
-
-                var productId = result?.Record?.Id;
-                if (productId.HasValue)
-                {
-                    firstProduct = await db.Product.FindAsync(productId.Value);
-                    responseText = $"The product [{firstProduct.Name}] fits with the search criteria [{search}][{result.Score?.ToString("0.00")}]";
-                }
-            }
-        }
-
-        if (firstProduct == null)
-        {
-            // no product found, ask the AI, keep the chat history
-            _logger.LogInformation("Product not found in memory, asking the AI");
-            InitChatHistory();
-            _messages.Add(new ChatMessage(ChatRole.User, search));
-
-            var result = _chatClient.CompleteAsync(chatMessages: _messages);
-            responseText = result.Result.Message.ToString();
-            _messages.Add(new ChatMessage(ChatRole.Assistant, responseText));
-
-            _logger.LogInformation($"AI response: {responseText}");
-        }
-        else
-        {
-            _logger.LogInformation("Product found in memory. Building a user friendly response");
-
-            try
-            {
-                // let's improve the response message
-                var prompt = @$"You are an intelligent assistant helping Contoso Inc clients with their search about outdoor product. 
+                var prompt = @$"You are an intelligent assistant helping Contoso Inc clients with their search about outdoor product.
 Generate a catchy and friendly message using the following information:
     - User Question: {search}
     - Found Product Name: {firstProduct.Name}
@@ -141,38 +74,70 @@ Generate a catchy and friendly message using the following information:
     - Found Product Description: {firstProduct.Description}
 Include the found product information in the response to the user question.";
 
-                _messages.Add(new ChatMessage(ChatRole.User, prompt));
-                var result = _chatClient.CompleteAsync(chatMessages: _messages);
-                responseText = result.Result.Message.ToString();
-
-                _logger.LogInformation($"AI Response message: {responseText}");
+                _messages.AddUserMessage(prompt);
+                var result = await chatClient.GetChatMessageContentsAsync(_messages);
+                responseText = result[^1].Content;
             }
-            catch (Exception e)
-            {
-                _logger.LogError($"Error building the response message: {e.Message}");
-            }
-
         }
 
         // create a response object
         return new SearchResponse
         {
-            Products = firstProduct == null ? [new Product()] : [firstProduct],
+            Products = firstProduct is null ? [new Product()] : [firstProduct],
             Response = responseText
         };
     }
 }
 
-public static class Extensions
+public static class MemoryContextExtensions
 {
-    public static void InitSemanticMemory(this IHost host)
+    const string MemoryCollectionName = "products";
+
+    public static void AddSemanticKernel(this WebApplicationBuilder builder)
     {
-        using var scope = host.Services.CreateScope();
+        builder.Services.AddSingleton(static sp => new Kernel(sp));
+        builder.Services.AddInMemoryVectorStoreRecordCollection<int, ProductVector>(MemoryCollectionName);
+        builder.Services.AddVectorStoreTextSearch<ProductVector>();
+        builder.Services.AddTransient<MemoryContext>();
+
+        builder.Services.AddSingleton(static sp =>
+            sp.GetRequiredKeyedService<IChatClient>("chat").AsChatCompletionService());
+
+        builder.Services.AddSingleton(static sp =>
+            sp.GetRequiredKeyedService<IEmbeddingGenerator<string, Embedding<float>>>("embedding").AsTextEmbeddingGenerationService());
+    }
+
+    public static void AddAzureAI(this WebApplicationBuilder builder)
+    {
+        builder.AddAzureOpenAIClient("aoai");
+        builder.Services.AddKeyedSingleton("chat", static (sp, _) =>
+        {
+            var config = sp.GetRequiredService<IConfiguration>();
+            var chatDeploymentName = config["AZURE_OPENAI_MODEL"] ?? throw new ArgumentNullException(nameof(config), "AZURE_OPENAI_MODEL is required.");
+
+            return sp.GetRequiredService<AzureOpenAIClient>().AsChatClient(chatDeploymentName);
+        });
+
+        builder.Services.AddKeyedSingleton("embedding", static (sp, _) =>
+        {
+            var config = sp.GetRequiredService<IConfiguration>();
+            var deploymentName = config["AZURE_OPENAI_EMBEDDING_MODEL"] ?? throw new ArgumentNullException(nameof(config), "AZURE_OPENAI_EMBEDDING_MODEL is required.");
+            return sp.GetRequiredService<AzureOpenAIClient>().AsEmbeddingGenerator(deploymentName);
+        });
+    }
+
+    public static void AddOllama(this WebApplicationBuilder builder)
+    {
+        builder.AddKeyedOllamaSharpChatClient("chat");
+        builder.AddKeyedOllamaSharpEmbeddingGenerator("embedding");
+    }
+
+    public static async Task InitSemanticMemoryAsync(this WebApplication app)
+    {
+        using var scope = app.Services.CreateScope();
         var services = scope.ServiceProvider;
-        var context = services.GetRequiredService<MemoryContext>();
-        context.InitMemoryContextAsync(
-            services.GetRequiredService<ILogger<ProductDataContext>>(),
-            services.GetRequiredService<IConfiguration>(),
-            services.GetRequiredService<ProductDataContext>());
+        var db = services.GetRequiredService<ProductDataContext>();
+        var memory = services.GetRequiredService<MemoryContext>();
+        await memory.FillProductsAsync();
     }
 }

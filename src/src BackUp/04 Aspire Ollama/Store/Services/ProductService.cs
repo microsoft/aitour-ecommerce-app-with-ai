@@ -43,14 +43,22 @@ public class ProductService
 		return products ?? new List<Product>();
     }
 
-    public async Task<SearchResponse?> Search(string searchTerm)
+    public async Task<SearchResponse?> Search(string searchTerm, bool semanticSearch = false)
     {
         try
         {
-            // call the AI Endpoint
-            var response = await httpClient.GetAsync($"/api/aisearch/{searchTerm}");
-
-            //var response = await httpClient.GetAsync($"/api/product/search/{searchTerm}");
+            // call the desired Endpoint
+            HttpResponseMessage response = null;
+            if (semanticSearch)
+            {
+                // AI Search
+                response = await httpClient.GetAsync($"/api/aisearch/{searchTerm}");
+            }
+            else
+            {
+                // standard search
+                response = await httpClient.GetAsync($"/api/product/search/{searchTerm}");
+            }
 
             var responseText = await response.Content.ReadAsStringAsync();
 
